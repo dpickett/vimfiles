@@ -1,267 +1,228 @@
 runtime! autoload/pathogen.vim
 silent! call pathogen#runtime_append_all_bundles()
 
-" Section: configuration
+" Use Vim settings, rather then Vi settings (much better!).
+" This must be first, because it changes other options as a side effect.
+set nocompatible
 
-  " goodies from gentoo
+" allow backspacing over everything in insert mode
+set backspace=indent,eol,start
 
-  source /gentoo/etc/vim/vimrc
+set nobackup
+set nowritebackup
+set history=50		" keep 50 lines of command line history
+set ruler		" show the cursor position all the time
+set showcmd		" display incomplete commands
+set incsearch		" do incremental searching
 
-  scriptencoding utf-8
+" Don't use Ex mode, use Q for formatting
+map Q gq
 
-  " I like pretty colors
-  colorscheme ir_black
+" This is an alternative that also works in block mode, but the deleted
+" text is lost and it only works for putting the current register.
+"vnoremap p "_dp
 
-  " These two enable syntax highlighting
-  set nocompatible          " We're running Vim, not Vi!
-  syntax on                 " Enable syntax highlighting
+" Switch syntax highlighting on, when the terminal has colors
+" Also switch on highlighting the last used search pattern.
+if (&t_Co > 2 || has("gui_running")) && !exists("syntax_on")
+  syntax on
+  set hlsearch
+endif
 
-  " Enable filetype-specific indenting and plugins
+" Only do this part when compiled with support for autocommands.
+if has("autocmd")
+
+  " Enable file type detection.
+  " Use the default filetype settings, so that mail gets 'tw' set to 72,
+  " 'cindent' is on in C files, etc.
+  " Also load indent files, to automatically do language-dependent indenting.
   filetype plugin indent on
 
-  " show the `best match so far' as search strings are typed
-  set incsearch
+  " Put these in an autocmd group, so that we can delete them easily.
+  augroup vimrcEx
+  au!
 
-  " Highlight search results once found:
-  set hlsearch
-
-  " highlight the current line the cursor is on
-  " set cursorline
-  "sm:    flashes matching brackets or parentheses
-  set showmatch
-
-  "sta:   helps with backspacing because of expandtab
-  set smarttab
-
-  " Change <Leader>
-  let mapleader = ","
-
-  " Set temporary directory (don't litter local dir with swp/tmp files)
-  set directory=/tmp/
-
-  " When scrolling off-screen do so 3 lines at a time, not 1
-  set scrolloff=3
-
-  " enable line numbers 
-  set number
-  setlocal numberwidth=5
-
-  " Enable tab complete for commands.
-  " first tab shows all matches. next tab starts cycling through the matches
-  set wildmenu
-  set wildmode=list:longest,full
-
-  " Display extra whitespace
-  "set list listchars=tab:»·,trail:·
-
-  " don't make it look like there are line breaks where there aren't:
-  "set nowrap
-
-  " assume the /g flag on :s substitutions to replace all matches in a line:
-  set gdefault
-
-  " Load matchit (% to bounce from do to end, etc.)
-  runtime! macros/matchit.vim
-
-  " Nice statusbar
-  set laststatus=2
-  set statusline=\ "
-  set statusline+=%f\ " file name
-  set statusline+=[
-  set statusline+=%{strlen(&ft)?&ft:'none'}, " filetype
-  set statusline+=%{&fileformat}] " file format
-  set statusline+=%h%1*%m%r%w%0* " flag
-  set statusline+=%= " right align
-  set statusline+=%-14.(%l,%c%V%)\ %<%P " offset
-
-  " enable setting title
-  set title
-  " configure title to look like: Vim /path/to/file
-  set titlestring=VIM:\ %-25.55F\ %a%r%m titlelen=70
-
-  " Make backspace work in insert mode
-  set backspace=indent,eol,start
-
-  " can has foldin plz?
-  set foldenable
-  set foldmethod=syntax
-  set foldlevel=999 " make it really high, so they're not displayed by default
-  
-
-  " Turn off rails bits of statusbar
-  let g:rails_statusline=0
-
-  " quit NERDTree after openning a file
-  let NERDTreeQuitOnOpen=1
-  " colored NERD Tree
-  let NERDChristmasTree = 1
-  let NERDTreeHighlightCursorline = 1
-  let NERDTreeShowHidden = 1
-  " map enter to activating a node
-  let NERDTreeMapActivateNode='<CR>'
-  let NERDTreeIgnore=['\.git','\.DS_Store','\.pdf']
-
-  " limit number of results shown for performance
-  let g:fuzzy_matching_limit=60
-  " ignore stuff that can't be openned, and generated files
-  let g:fuzzy_ignore = "*.png;*.PNG;*.JPG;*.jpg;*.GIF;*.gif;vendor/**;coverage/**;tmp/**;rdoc/**"
-  " increate the number of files scanned for very large projects
-  let g:fuzzy_ceiling=20000
-  " display relative path, instead of abbrevated path (lib/jeweler.rb vs
-  " l/jeweler.rb)
-  let g:fuzzy_path_display = 'relative_path'
-
-  let g:browser = 'open '
-
-  augroup myfiletypes
-    " Clear old autocmds in group
-    autocmd!
-    " autoindent with two spaces, always expand tabs
-    autocmd FileType ruby,eruby,yaml set autoindent shiftwidth=2 softtabstop=2 tabstop=2 expandtab
-    autocmd FileType javascript set autoindent shiftwidth=2 softtabstop=2 expandtab
-    autocmd FileType vim set autoindent tabstop=2 shiftwidth=2 softtabstop=2 expandtab
-    autocmd FileType cucumber set autoindent tabstop=2 shiftwidth=2 softtabstop=2 expandtab
-    au BufRead,BufNewFile *etc/nginx/* set ft=nginx 
-    " treat rackup files like ruby
-    au BufRead,BufNewFile *.ru set ft=ruby
-    au BufRead,BufNewFile Gemfile set ft=ruby
-    autocmd BufEnter *.haml setlocal cursorcolumn
-    au BufRead,BufNewFile Gemfile set ft=ruby                                   
-    au BufRead,BufNewFile Capfile set ft=ruby                                   
-    au BufRead,BufNewFile *.god set ft=ruby  
-  augroup END
-
+  " For all text files set 'textwidth' to 100 characters.
+  autocmd FileType text setlocal textwidth=100
 
   " When editing a file, always jump to the last known cursor position.
   " Don't do it when the position is invalid or when inside an event handler
   " (happens when dropping a file on gvim).
   autocmd BufReadPost *
-        \ if line("'\"") > 0 && line("'\"") <= line("$") |
-        \   exe "normal g`\"" |
-        \ endi
+    \ if line("'\"") > 0 && line("'\"") <= line("$") |
+    \   exe "normal g`\"" |
+    \ endif
 
-  " Turn on language specific omnifuncs
-  autocmd FileType ruby set omnifunc=rubycomplete#Complete
-  autocmd FileType python set omnifunc=pythoncomplete#Complete
-  autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
-  autocmd FileType html set omnifunc=htmlcomplete#CompleteTags
-  autocmd FileType css set omnifunc=csscomplete#CompleteCSS
-  autocmd FileType xml set omnifunc=xmlcomplete#CompleteTags
-  autocmd FileType php set omnifunc=phpcomplete#CompletePHP
-  autocmd FileType c set omnifunc=ccomplete#Complete
+  augroup END
 
+else
 
-  " have some fun with bufexplorer
-  let g:bufExplorerDefaultHelp=0       " Do not show default help.
-  let g:bufExplorerShowRelativePath=1  " Show relative paths.
+  set autoindent		" always set autoindenting on
 
-" IRB {{{
-  autocmd FileType irb inoremap <buffer> <silent> <CR> <Esc>:<C-u>ruby v=VIM::Buffer.current;v.append(v.line_number, eval(v[v.line_number]).inspect)<CR>
+endif " has("autocmd")
 
-" Section: functions
+if has("folding")
+  set foldenable
+  set foldmethod=syntax
+  set foldlevel=1
+  set foldnestmax=2
+  set foldtext=strpart(getline(v:foldstart),0,50).'\ ...\ '.substitute(getline(v:foldend),'^[\ #]*','','g').'\ '
 
-  function! s:RunShellCommand(cmdline)
-    botright new
+  " automatically open folds at the starting cursor position
+  " autocmd BufReadPost .foldo!
+endif
 
-    setlocal buftype=nofile
-    setlocal bufhidden=delete
-    setlocal nobuflisted
-    setlocal noswapfile
-    setlocal nowrap
-    setlocal filetype=shell
-    setlocal syntax=shell
+" Softtabs, 2 spaces
+set tabstop=2
+set shiftwidth=2
+set expandtab
 
-    call setline(1,a:cmdline)
-    call setline(2,substitute(a:cmdline,'.','=','g'))
-    execute 'silent $read !'.escape(a:cmdline,'%#')
-    setlocal nomodifiable
-    1
-  endfunction
+" Always display the status line
+set laststatus=2
 
-  " Open the Rails ApiDock page for the word under cursor, using the 'open'
-  " command
-  function! OpenRailsDoc(keyword)
-    let url = 'http://apidock.com/rails/'.a:keyword
-    exec '!'.g:browser.' '.url
-  endfunction
+" Hide search highlighting
+map ,nh :nohls <CR>
 
-  " Open the Ruby ApiDock page for the word under cursor, using the 'open'
-  " command
-  function! OpenRubyDoc(keyword)
-    let url = 'http://apidock.com/ruby/'.a:keyword
-    exec '!'.g:browser.' '.url
-  endfunction
+" Opens an edit command with the path of the currently edited file filled in
+" Normal mode: ,e
+map ,e :e <C-R>=expand("%:p:h") . "/" <CR>
 
-" Section: commands
+" Opens a tab edit command with the path of the currently edited file filled in
+" Normal mode: ,t
+map ,t :tabe <C-R>=expand("%:p:h") . "/" <CR>
 
-  " Shell
-  command! -complete=file -nargs=+ Shell call s:RunShellCommand(<q-args>)
+" Inserts the path of the currently edited file into a command
+" Command mode: Ctrl+P
+cmap <C-P> <C-R>=expand("%:p:h") . "/" <CR>
 
-  " Ruby code metrics
-  command! -complete=file -nargs=+ Reek :Shell reek <q-args>
-  command! -complete=file -nargs=+ Roodi :Shell roodi <q-args>
-  command! -complete=file -nargs=+ Flog :Shell flog -m -I lib <q-args> 2>/dev/null
+" Duplicate a selection
+" Visual mode: D
+vmap D y'>p
 
-" Section: mappings
+" For Haml
+au! BufRead,BufNewFile *.haml         setfiletype haml
 
-  " Tab navigation
-  nmap <leader>tn :tabnext<CR>
-  nmap <leader>tp :tabprevious<CR>
-  nmap <leader>te :tabedit
+" No Help, please
+nmap <F1> <Esc>
 
-  " Remap F1 from Help to ESC.  No more accidents.
-  nmap <F1> <Esc>
-  map! <F1> <Esc>
+" Press ^F from insert mode to insert the current file name
+imap <C-F> <C-R>=expand("%")<CR>
 
-  " insert hashrocket, =>, with control-l
-  imap <C-l> <Space>=><Space>
+" Edit routes
+command! Rroutes :e config/routes.rb
+command! RTroutes :tabe config/routes.rb
 
-  " align hashrockets with <leader>t control-l
-  vmap <leader>t<C-l> :Align =><CR>
+" Local config
+if filereadable(".vimrc.local")
+  source .vimrc.local
+endif
 
-  " Toggle NERDTree with <leader>d
-  map <silent> <leader>d :execute 'NERDTreeToggle ' . getcwd()<CR>
+" Use Ack instead of Grep when available
+if executable("ack")
+  set grepprg=ack\ -H\ --nogroup\ --nocolor
+endif
 
-  " TextMate fuzzy finder with <leader>t
-  map <silent> <leader>t :FuzzyFinderTextMate<CR>
+" Color scheme
+colorscheme vividchalk
+highlight NonText guibg=#060606
+highlight Folded  guibg=#0A0A0A guifg=#9090D0
 
-  " FuzzyFinder tags with <leader>T
-  nnoremap <silent> <leader>T :FuzzyFinderTag!<CR>
+" Numbers
+set number
+set numberwidth=5
 
-  " <leader>F to begin searching with ack
-  map <leader>F :Ack<space>
+" bind command-/ to toggle comment
+" requires NERD Commenter to be installed:
+" http://www.vim.org/scripts/script.php?script_id=1218
+nmap <D-/> ,cc
+vmap <D-/> ,cc
+imap <D-/> ,cc
 
-  " search next/previous -- center in page
-  nmap n nzz
-  nmap N Nzz
-  nmap * *Nzz
-  nmap # #nzz
+let mapleader = ","
 
-  " Yank from the cursor to the end of the line, to be consistent with C and D.
-  nnoremap Y y$
+" bind \d to toggle file browser
+" requires NERDTree
+nmap <leader>d :NERDTreeToggle<CR>
 
-  " Hide search highlighting
-  map <silent> <leader>nh :nohls <CR>
+" Leader shortcuts for Rails commands
+map <Leader>m :Rmodel
+map <Leader>c :Rcontroller
+map <Leader>v :Rview
+map <Leader>u :Runittest
+map <Leader>f :Rfunctionaltest
+map <Leader>tm :RTmodel
+map <Leader>tc :RTcontroller
+map <Leader>tv :RTview
+map <Leader>tu :RTunittest
+map <Leader>tf :RTfunctionaltest
+map <Leader>sm :RSmodel
+map <Leader>sc :RScontroller
+map <Leader>sv :RSview
+map <Leader>su :RSunittest
+map <Leader>sf :RSfunctionaltest
 
-  " toggle Quickfix window with <leader>q
-  map <silent> <leader>q :QFix<CR>
+" binds \ t to textmate-style fuzzy finder
+nmap <leader>t :FuzzyFinderTextMate<CR>
+let g:fuzzy_matching_limit=60 " this seems to help performance
+let g:fuzzy_ceiling=20000
 
-  nnoremap <leader>irb :<C-u>below new<CR>:setfiletype irb<CR>:set syntax=ruby<CR>:set buftype=nofile<CR>:set bufhidden=delete<CR>i
+" binds \ T to taglist (sorta like textmate apple-shift-t)
+map <leader>T :TlistToggle<CR>
+let Tlist_Show_Menu=1
+let Tlist_GainFocus_On_ToggleOpen=1
+let Tlist_Close_OnSelect=1
+let Tlist_Compact_Format=1
 
-  " Easily lookup documentation on apidock
-  noremap <leader>rb :call OpenRubyDoc(expand('<cword>'))<CR>
-  noremap <leader>rr :call OpenRailsDoc(expand('<cword>'))<CR>
+" bind save
+nmap <D-s> :w<CR>
+imap <D-s> <Esc>:w<CR>a
 
-  map <C-c>n :cnext<CR>
-  map <C-c>p :cprevious<CR>
+" bind command-] to shift right
+nmap <D-]> >>
+vmap <D-]> >>
+imap <D-]> <C-O>>>
 
-  function! RspecToMocha()
-    silent! %s/\.stub!\?(/.stubs(/
-    silent! %s/and_return/returns/
-    silent! %s/should_receive/expects/
-    silent! %s/should_not_receive\((.*)\)/expects\1.never
-    silent! %s/and_raise/raises/
-    :w
-  endfunction
-  command! RspecToMocha call RspecToMocha()
-  
+" bind command-[ to shift left
+nmap <D-[> <<
+vmap <D-[> <<
+imap <D-[> <C-O><<
+
+" open tabs with command-<tab number>
+  map <D-1> :tabn 1<CR>
+  map <D-2> :tabn 2<CR>
+  map <D-3> :tabn 3<CR>
+  map <D-4> :tabn 4<CR>
+  map <D-5> :tabn 5<CR>
+  map <D-6> :tabn 6<CR>
+  map <D-7> :tabn 7<CR>
+  map <D-8> :tabn 8<CR>
+  map <D-9> :tabn 9<CR>
+
+ " hashrocket shortcut
+  imap <C-l> <Space>=><Space> 
+
+" window splitting mappings
+" split vertically with <leader> v
+" split horizontally with <leader> s
+nmap <leader>v :vsplit<CR> <C-w><C-w>
+nmap <leader>s :split<CR> <C-w><C-w>
+
+set splitright
+
+" Make it way easier to switch windows (<leader>w)
+nmap <leader>w <C-w><C-w>_
+
+set nocompatible          " We're running Vim, not Vi!
+syntax on                 " Enable syntax highlighting
+filetype plugin indent on " Enable filetype-specific indenting and plugins
+
+set incsearch             " Incremental searching
+set hlsearch              " Highlight search results once found:
+                          " http://vim.wikia.com/wiki/Highlight_all_search_pattern_matches
+set smarttab              "sta:   helps with backspacing because of expandtab
+ 
+let g:miniBufExplMapWindowNavVim = 1
+let g:miniBufExplMapWindowNavArrows = 1
+let g:miniBufExplMapCTabSwitchBufs = 1
+let g:miniBufExplModSelTarget = 1 
+
